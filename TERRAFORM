@@ -1,0 +1,76 @@
+terraform {
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "github" {
+  token = "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"
+  owner = "Gambrinys"
+}    
+
+resource "github_repository" "github-terraform-task-Gambrinys" {
+  name = "github-terraform-task-Gambrinys"
+  visibility = "public"
+}
+
+resource "github_repository_file" "cretae_codeowners" {
+  repository          = github_repository.github-terraform-task-Gambrinys.name
+  branch              = "main"
+  file                = "./.github/CODEOWNERS"
+  content             = "* @softservedata"
+}
+
+resource "github_branch" "develop" {
+  repository = github_repository.github-terraform-task-Gambrinys.name
+  branch     = "develop"
+}
+
+resource "github_repository_collaborator" "a_repo_collaborator" {
+  repository = github_repository.github-terraform-task-Gambrinys.name
+  username   = "softservedata"
+  permission = "admin"
+}
+
+resource "github_branch_default" "default"{
+  repository = github_repository.github-terraform-task-Gambrinys.name
+  branch     = github_branch.develop.branch
+}
+
+resource "github_actions_secret" "add_secret" {
+  repository       = github_repository.github-terraform-task-Gambrinys.name
+  secret_name      = "PAT"
+  plaintext_value  = "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"
+}
+
+resource "github_branch_protection" "protect_main" {
+  repository_id    = github_repository.github-terraform-task-Gambrinys.name
+  pattern          = "main"
+  required_pull_request_reviews {
+    #dismiss_stale_reviews      = false
+    #dismissal_users            = []
+    #dismissal_teams            = []
+    require_code_owner_reviews = true
+  }
+}
+
+resource "github_branch_protection" "protect_develop" {
+  repository_id    = github_repository.github-terraform-task-Gambrinys.name
+  pattern          = "develop"
+  required_pull_request_reviews {
+    #dismiss_stale_reviews      = true
+    #dismissal_users            = []
+    #dismissal_teams            = []
+    required_approving_review_count = 2
+  }
+}
+
+resource "github_repository_deploy_key" "example_repository_deploy_key" {
+  title      = "DEPLOY_KEY"
+  repository = github_repository.github-terraform-task-Gambrinys.name
+  key        = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMTGhNzYDOwV4C/kwN7/6BRHa1IubGUWJMpNuebifhmh andrew.voloshyn@gmail.com"
+  read_only  = "false"
+}
